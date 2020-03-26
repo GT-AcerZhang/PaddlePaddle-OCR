@@ -1,0 +1,2 @@
+# PaddlePaddle-OCR
+基于PaddlePaddle实现的OCR，包括CRNN和Attention模型
