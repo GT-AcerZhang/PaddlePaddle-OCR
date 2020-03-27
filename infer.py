@@ -10,11 +10,9 @@ exe = fluid.Executor(place)
 exe.run(fluid.default_startup_program())
 
 [infer_program, feeded_var_names, target_var] = fluid.io.load_inference_model(dirname=cfg.infer_model_path,
-                                                                              executor=exe,
-                                                                              model_filename='model.paddle',
-                                                                              params_filename='params.paddle')
+                                                                              executor=exe)
 with open(cfg.dict_path, 'r', encoding='utf-8') as f:
-    d = json.loads(f.readlines())
+    d = json.loads(f.readlines()[0])
 
 label_dict = dict(zip(d.values(), d.keys()))
 
@@ -46,12 +44,14 @@ def inference(image_path):
     pixel_data = np.concatenate([img], axis=0).astype("float32")
     pixel_tensor.set(pixel_data, place)
     results = exe.run(infer_program,
-                feed={feeded_var_names[0]: pixel_tensor},
-                fetch_list=target_var,
-                return_numpy=False)
+                      feed={feeded_var_names[0]: pixel_tensor},
+                      fetch_list=target_var,
+                      return_numpy=False)
     indexes = prune(np.array(results[0]).flatten(), 0, 1)
     r = ''
     for index in indexes:
+        if index == -1:
+            continue
         r += label_dict[index]
     return r
 

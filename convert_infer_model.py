@@ -48,6 +48,4 @@ if os.path.exists(cfg.persistables_models_path):
 fluid.io.save_inference_model(dirname=cfg.infer_model_path,
                               feeded_var_names=[images.name],
                               target_vars=[ids],
-                              executor=exe,
-                              model_filename="model.paddle",
-                              params_filename='params.paddle')
+                              executor=exe)

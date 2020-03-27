@@ -7,7 +7,19 @@ import config as cfg
 from nets.attention_model import attention_train_net
 from nets.crnn_ctc_model import ctc_train_net
 from utils import data_reader
+from visualdl import LogWriter
 from utils.utility import get_ctc_feeder_data, get_attention_feeder_data
+
+# 创建记录器
+log_writer = LogWriter(dir='log/', sync_cycle=10)
+
+# 创建训练和测试记录数据工具
+with log_writer.mode('train') as writer:
+    train_loss_writer = writer.scalar('Avg loss')
+    train_error_writer = writer.scalar('Avg seq err')
+
+with log_writer.mode('test') as writer:
+    test_error_writer = writer.scalar('Seq error')
 
 
 def train_one_batch(train_exe, fetch_vars, data, get_feeder_data, place):
@@ -23,13 +35,12 @@ def train_one_batch(train_exe, fetch_vars, data, get_feeder_data, place):
     return results
 
 
-def test(exe, inference_program, error_evaluator, get_feeder_data, test_reader, place, iter_num):
+def test(exe, inference_program, error_evaluator, get_feeder_data, test_reader, place):
     error_evaluator.reset(exe)
     for data in test_reader():
         exe.run(inference_program, feed=get_feeder_data(data, place))
     _, test_seq_error = error_evaluator.eval(exe)
-    print("\n[%s] - Iter[%d]; Test seq error: %s.\n" %
-          (time.asctime(time.localtime(time.time())), iter_num, str(test_seq_error[0])))
+    return test_seq_error[0]
 
 
 def save_model(exe):
@@ -82,6 +93,8 @@ def main():
     fetch_vars = [sum_cost] + error_evaluator.metrics
 
     iter_num = 0
+    train_step = 0
+    test_step = 0
     stop = False
     while not stop:
         total_loss = 0.0
@@ -102,6 +115,12 @@ def main():
                       % (time.asctime(time.localtime(time.time())), iter_num,
                          total_loss / (cfg.log_period * cfg.batch_size),
                          total_seq_error / (cfg.log_period * cfg.batch_size)))
+
+                # 写入训练输出数据
+                train_loss_writer.add_record(train_step, total_loss / (cfg.log_period * cfg.batch_size))
+                train_error_writer.add_record(train_step, total_seq_error / (cfg.log_period * cfg.batch_size))
+                train_step += 1
+
                 total_loss = 0.0
                 total_seq_error = 0.0
 
@@ -109,9 +128,16 @@ def main():
             if iter_num % cfg.eval_period == 0:
                 if model_average:
                     with model_average.apply(exe):
-                        test(exe, inference_program, error_evaluator, get_feeder_data, test_reader, place, iter_num)
+                        test_seq_error = test(exe, inference_program, error_evaluator, get_feeder_data, test_reader,
+                                              place)
                 else:
-                    test(exe, inference_program, error_evaluator, get_feeder_data, test_reader, place, iter_num)
+                    test_seq_error = test(exe, inference_program, error_evaluator, get_feeder_data, test_reader, place)
+
+                print("\n[%s] - Iter[%d]; Test seq error: %.3f\n" %
+                      (time.asctime(time.localtime(time.time())), iter_num, test_seq_error))
+                # 写入测试输出数据
+                test_error_writer.add_record(test_step, test_seq_error)
+                test_step += 1
 
             # save model
             if iter_num % cfg.save_model_period == 0:

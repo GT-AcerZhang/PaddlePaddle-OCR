@@ -3,7 +3,7 @@ dict_path = "dataset/dict.txt"
 # Data shape
 data_shape = [1, 48, 512]
 # Minibatch size.
-batch_size = 128
+batch_size = 512
 # Learning rate.
 lr = 1e-3
 # Learning rate decay strategy. 'piecewise_decay' or None is valid.
@@ -17,11 +17,11 @@ gradient_clip = 10.0
 # The number of iterations.
 total_step = 720000
 # Log period.
-log_period = 1000
-# character class num.
-num_classes = 95
+log_period = 100
+# character class num + 1 .
+num_classes = 63
 # Save model period. '-1' means never saving the model.
-save_model_period = 2000
+save_model_period = 3000
 # Evaluate period. '-1' means never evaluating the model.
 eval_period = 15000
 # The list file of images to be used for training.
@@ -36,7 +36,7 @@ use_model = 'crnn_ctc'
 persistables_models_path = 'models/%s/persistables/' % use_model
 infer_model_path = 'models/%s/infer/' % use_model
 # The init model file of directory.
-pretrained_model = None
+pretrained_model = 'models/crnn_ctc/persistables/'
 # Whether use GPU to train.
 use_gpu = True
 # Min average window.

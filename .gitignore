@@ -1,5 +1,6 @@
 .idea/
 dataset/
+log/
 models/
 __pycache__/
 utils/__pycache__/
