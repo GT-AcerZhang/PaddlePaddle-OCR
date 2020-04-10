@@ -1,4 +1,3 @@
-import os
 import paddle.fluid as fluid
 import config as cfg
 from utils import data_reader
@@ -19,8 +18,7 @@ def evaluate():
     evaluator, cost = eval(cfg.data_shape, cfg.num_classes, use_cudnn=cfg.use_gpu)
 
     # data reader
-    test_reader = data_reader.test(test_list_file=cfg.test_list,
-                                   model=cfg.use_model)
+    test_reader = data_reader.test(prefix_path=cfg.test_prefix, model=cfg.use_model)
 
     # prepare environment
     place = fluid.CUDAPlace(0) if cfg.use_gpu else fluid.CPUPlace()

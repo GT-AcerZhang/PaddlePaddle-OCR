@@ -12,7 +12,7 @@ if cfg.use_model == "crnn_ctc":
 else:
     infer = attention_infer
 # 获取网络输入
-images = fluid.layers.data(name='pixel', shape=cfg.data_shape, dtype='float32')
+images = fluid.data(name='pixel', shape=[None] + cfg.data_shape, dtype='float32')
 ids = infer(images, cfg.num_classes, use_cudnn=cfg.use_gpu)
 # 准备环境
 place = fluid.CUDAPlace(0) if cfg.use_gpu else fluid.CPUPlace()

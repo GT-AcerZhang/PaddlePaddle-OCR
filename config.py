@@ -1,9 +1,9 @@
 # data dict
 dict_path = "dataset/dict.txt"
 # Data shape
-data_shape = [1, 48, 512]
+data_shape = [1, 48, -1]
 # Minibatch size.
-batch_size = 512
+batch_size = 128
 # Learning rate.
 lr = 1e-3
 # Learning rate decay strategy. 'piecewise_decay' or None is valid.
@@ -21,9 +21,9 @@ log_period = 100
 # character class num + 1 .
 num_classes = 63
 # Save model period. '-1' means never saving the model.
-save_model_period = 3000
+save_model_period = 1000
 # Evaluate period. '-1' means never evaluating the model.
-eval_period = 15000
+eval_period = 1000
 # The list file of images to be used for training.
 train_list = 'dataset/train.txt'
 # The list file of images to be used for training.
@@ -46,5 +46,5 @@ max_average_window = 12500
 # Average window.
 average_window = 0.15
 # Whether use parallel training.
-parallel = True
+parallel = False
 

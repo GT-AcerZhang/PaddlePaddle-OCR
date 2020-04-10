@@ -25,7 +25,7 @@ def create(images_dir, train_list_path, test_list_path, label_file):
     for image in tqdm(images):
         i += 1
         image_path = os.path.join(images_dir, image)
-        chars = image.split('_')[1]
+        chars = image.split('.')[0].split('_')[1]
         for c in chars:
             keys = label_dict.keys()
             if c not in keys:

@@ -8,6 +8,7 @@ sos = 0
 eos = 1
 beam_size = 1
 
+
 def conv_bn_pool(input,
                  group,
                  out_ch,
@@ -18,7 +19,7 @@ def conv_bn_pool(input,
     tmp = input
     for i in six.moves.xrange(group):
         filter_size = 3
-        conv_std = (2.0 / (filter_size**2 * tmp.shape[1]))**0.5
+        conv_std = (2.0 / (filter_size ** 2 * tmp.shape[1])) ** 0.5
         conv_param = fluid.ParamAttr(
             initializer=fluid.initializer.Normal(0.0, conv_std))
         tmp = fluid.layers.conv2d(
@@ -55,7 +56,6 @@ def ocr_convs(input, is_test=False, use_cudnn=True):
 
 
 def encoder_net(images, rnn_hidden_size=200, is_test=False, use_cudnn=True):
-
     conv_features = ocr_convs(images, is_test=is_test, use_cudnn=use_cudnn)
 
     sliced_feature = fluid.layers.im2sequence(
@@ -148,12 +148,11 @@ def gru_decoder_with_attention(target_embedding, encoder_vec, encoder_proj,
 
 
 def attention_train_net(args, data_shape, num_classes):
-
-    images = fluid.layers.data(name='pixel', shape=data_shape, dtype='float32')
-    label_in = fluid.layers.data(
-        name='label_in', shape=[1], dtype='int32', lod_level=1)
-    label_out = fluid.layers.data(
-        name='label_out', shape=[1], dtype='int32', lod_level=1)
+    if len(list(data_shape)) == 3:
+        data_shape = [None] + list(data_shape)
+    images = fluid.data(name='pixel', shape=data_shape, dtype='float32')
+    label_in = fluid.data(name='label_in', shape=[None, 1], dtype='int32', lod_level=1)
+    label_out = fluid.data(name='label_out', shape=[None, 1], dtype='int32', lod_level=1)
 
     gru_backward, encoded_vector, encoded_proj = encoder_net(images)
 
@@ -224,7 +223,6 @@ def simple_attention(encoder_vec, encoder_proj, decoder_state, decoder_size):
 
 
 def attention_infer(images, num_classes, use_cudnn=True):
-
     max_length = 20
     gru_backward, encoded_vector, encoded_proj = encoder_net(
         images, is_test=True, use_cudnn=use_cudnn)
@@ -248,10 +246,8 @@ def attention_infer(images, num_classes, use_cudnn=True):
     ids_array = fluid.layers.create_array('int64')
     scores_array = fluid.layers.create_array('float32')
 
-    init_ids = fluid.layers.data(
-        name="init_ids", shape=[1], dtype="int64", lod_level=2)
-    init_scores = fluid.layers.data(
-        name="init_scores", shape=[1], dtype="float32", lod_level=2)
+    init_ids = fluid.data(name="init_ids", shape=[None, 1], dtype="int64", lod_level=2)
+    init_scores = fluid.data(name="init_scores", shape=[None, 1], dtype="float32", lod_level=2)
 
     fluid.layers.array_write(init_ids, array=ids_array, i=counter)
     fluid.layers.array_write(init_scores, array=scores_array, i=counter)
@@ -310,7 +306,7 @@ def attention_infer(images, num_classes, use_cudnn=True):
             accu_scores,
             beam_size,
             eos,  # end_id
-            #level=0
+            # level=0
         )
 
         fluid.layers.increment(x=counter, value=1, in_place=True)
@@ -333,11 +329,11 @@ def attention_infer(images, num_classes, use_cudnn=True):
 
 
 def attention_eval(data_shape, num_classes, use_cudnn=True):
-    images = fluid.layers.data(name='pixel', shape=data_shape, dtype='float32')
-    label_in = fluid.layers.data(
-        name='label_in', shape=[1], dtype='int32', lod_level=1)
-    label_out = fluid.layers.data(
-        name='label_out', shape=[1], dtype='int32', lod_level=1)
+    if len(list(data_shape)) == 3:
+        data_shape = [None] + data_shape
+    images = fluid.data(name='pixel', shape=data_shape, dtype='float32')
+    label_in = fluid.data(name='label_in', shape=[None, 1], dtype='int32', lod_level=1)
+    label_out = fluid.data(name='label_out', shape=[None, 1], dtype='int32', lod_level=1)
     label_out = fluid.layers.cast(x=label_out, dtype='int64')
     label_in = fluid.layers.cast(x=label_in, dtype='int64')
 
