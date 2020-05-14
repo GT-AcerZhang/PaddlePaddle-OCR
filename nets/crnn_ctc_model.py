@@ -162,11 +162,10 @@ def ctc_train_net(args, data_shape, num_classes):
 
     images = fluid.data(name='pixel', shape=[None] + data_shape, dtype='float32')
     label = fluid.data(name='label', shape=[None, 1], dtype='int32', lod_level=1)
-    fc_out = encoder_net(
-        images,
-        num_classes,
-        regularizer=regularizer,
-        use_cudnn=True if args.use_gpu else False)
+    fc_out = encoder_net(images=images,
+                         num_classes=num_classes,
+                         regularizer=regularizer,
+                         use_cudnn=True if args.use_gpu else False)
     cost = fluid.layers.warpctc(input=fc_out, label=label, blank=num_classes, norm_by_times=True)
     sum_cost = fluid.layers.reduce_sum(cost)
     decoded_out = fluid.layers.ctc_greedy_decoder(input=fc_out, blank=num_classes)
@@ -180,9 +179,7 @@ def ctc_train_net(args, data_shape, num_classes):
     else:
         learning_rate = LR
 
-    # optimizer = fluid.optimizer.Momentum(
-    #     learning_rate=learning_rate, momentum=MOMENTUM)
-    optimizer = fluid.optimizer.Adam(learning_rate=args.lr)
+    optimizer = fluid.optimizer.Momentum(learning_rate=learning_rate, momentum=MOMENTUM)
     _, params_grads = optimizer.minimize(sum_cost)
     model_average = None
     if args.average_window > 0:

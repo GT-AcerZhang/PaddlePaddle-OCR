@@ -1,25 +1,12 @@
 import os
 import time
-import shutil
 import numpy as np
 import paddle.fluid as fluid
 import config as cfg
 from nets.attention_model import attention_train_net
 from nets.crnn_ctc_model import ctc_train_net
 from utils import data_reader
-from visualdl import LogWriter
 from utils.utility import get_ctc_feeder_data, get_attention_feeder_data
-
-# 创建记录器
-log_writer = LogWriter(dir='log/', sync_cycle=10)
-
-# 创建训练和测试记录数据工具
-with log_writer.mode('train') as writer:
-    train_loss_writer = writer.scalar('Avg loss')
-    train_error_writer = writer.scalar('Avg seq err')
-
-with log_writer.mode('test') as writer:
-    test_error_writer = writer.scalar('Seq error')
 
 
 def main():
@@ -47,13 +34,12 @@ def main():
     exe.run(fluid.default_startup_program())
 
     # 加载初始化模型
-    if cfg.pretrained_model:
-        def if_exist(var):
-            if os.path.exists(os.path.join(cfg.pretrained_model, var.name)):
-                print('loaded: %s' % var.name)
-            return os.path.exists(os.path.join(cfg.pretrained_model, var.name))
-
-        fluid.io.load_vars(exe, cfg.pretrained_model, predicate=if_exist)
+    if cfg.init_model:
+        fluid.load(program=fluid.default_main_program(),
+                   model_path=cfg.init_model,
+                   executor=exe,
+                   var_list=fluid.io.get_program_parameter(fluid.default_main_program()))
+        print("Init model from: %s." % cfg.init_model)
 
     train_exe = exe
     error_evaluator.reset(exe)
@@ -67,11 +53,12 @@ def main():
         if cfg.parallel:
             results = train_exe.run(var_names,
                                     feed=get_feeder_data(data, place))
-            results = [np.array(result).sum() for result in results]
+            results = [np.array(r).sum() for r in results]
         else:
-            results = train_exe.run(feed=get_feeder_data(data, place),
-                                    fetch_list=fetch_vars)
-            results = [result[0] for result in results]
+            results = exe.run(program=fluid.default_main_program(),
+                              feed=get_feeder_data(data, place),
+                              fetch_list=fetch_vars)
+            results = [r[0] for r in results]
         return results
 
     def test():
@@ -81,17 +68,14 @@ def main():
         _, test_seq_error = error_evaluator.eval(exe)
         return test_seq_error[0]
 
-    def save_model(exe):
-        if os.path.exists(cfg.persistables_models_path):
-            shutil.rmtree(cfg.persistables_models_path)
-        else:
-            os.makedirs(cfg.persistables_models_path)
-        fluid.io.save_persistables(exe, dirname=cfg.persistables_models_path)
-        print("Saved model to: %s" % cfg.persistables_models_path)
+    def save_model():
+        if not os.path.exists(cfg.model_path):
+            os.makedirs(cfg.model_path)
+        fluid.save(program=fluid.default_main_program(),
+                   model_path=os.path.join(cfg.model_path, "model"))
+        print("Saved model to: %s" % cfg.model_path)
 
     iter_num = 0
-    train_step = 0
-    test_step = 0
     stop = False
     while not stop:
         total_loss = 0.0
@@ -101,9 +85,9 @@ def main():
             if cfg.total_step < iter_num:
                 stop = True
                 break
-            results = train_one_batch(data)
-            total_loss += results[0]
-            total_seq_error += results[2]
+            result = train_one_batch(data)
+            total_loss += result[0]
+            total_seq_error += result[2]
 
             iter_num += 1
             # training log
@@ -112,12 +96,6 @@ def main():
                       % (time.asctime(time.localtime(time.time())), iter_num,
                          total_loss / (cfg.log_period * cfg.batch_size),
                          total_seq_error / (cfg.log_period * cfg.batch_size)))
-
-                # 写入训练输出数据
-                train_loss_writer.add_record(train_step, total_loss / (cfg.log_period * cfg.batch_size))
-                train_error_writer.add_record(train_step, total_seq_error / (cfg.log_period * cfg.batch_size))
-                train_step += 1
-
                 total_loss = 0.0
                 total_seq_error = 0.0
 
@@ -131,17 +109,13 @@ def main():
 
                 print("\n[%s] - Iter[%d]; Test seq error: %.3f\n" %
                       (time.asctime(time.localtime(time.time())), iter_num, test_seq_error))
-                # 写入测试输出数据
-                test_error_writer.add_record(test_step, test_seq_error)
-                test_step += 1
-
             # save model
             if iter_num % cfg.save_model_period == 0:
                 if model_average:
                     with model_average.apply(exe):
-                        save_model(exe)
+                        save_model()
                 else:
-                    save_model(exe)
+                    save_model()
 
 
 if __name__ == "__main__":

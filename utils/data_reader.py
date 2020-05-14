@@ -73,6 +73,7 @@ class DataGenerator(object):
                         if j == 0:
                             sz = img.shape
                         img = cv2.resize(img, (sz[1], cfg.data_shape[1]))
+
                         img = np.array(img) - 127.5
                         img = img[np.newaxis, ...]
                         if self.model == "crnn_ctc":

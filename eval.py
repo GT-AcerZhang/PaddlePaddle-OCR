@@ -26,9 +26,12 @@ def evaluate():
     exe.run(fluid.default_startup_program())
 
     # load init model
-    if cfg.persistables_models_path:
-        fluid.io.load_persistables(exe, dirname=cfg.persistables_models_path)
-        print("Init model from: %s." % cfg.persistables_models_path)
+    if cfg.init_model:
+        fluid.load(program=fluid.default_main_program(),
+                   model_path=cfg.init_model,
+                   executor=exe,
+                   var_list=fluid.io.get_program_parameter(fluid.default_main_program()))
+        print("Init model from: %s." % cfg.init_model)
 
     evaluator.reset(exe)
     count = 0

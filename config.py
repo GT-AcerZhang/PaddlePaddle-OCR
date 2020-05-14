@@ -1,7 +1,7 @@
 # data dict
 dict_path = "dataset/dict.txt"
 # Data shape
-data_shape = [1, 48, -1]
+data_shape = [1, 60, -1]
 # Minibatch size.
 batch_size = 128
 # Learning rate.
@@ -19,11 +19,11 @@ total_step = 720000
 # Log period.
 log_period = 100
 # character class num + 1 .
-num_classes = 63
+num_classes = 62
 # Save model period. '-1' means never saving the model.
-save_model_period = 1000
+save_model_period = 5000
 # Evaluate period. '-1' means never evaluating the model.
-eval_period = 1000
+eval_period = 5000
 # The list file of images to be used for training.
 train_list = 'dataset/train.txt'
 # The list file of images to be used for training.
@@ -33,10 +33,10 @@ test_prefix = 'dataset/test'
 # Which type of network to be used. 'crnn_ctc' or 'attention'
 use_model = 'crnn_ctc'
 # Save model path
-persistables_models_path = 'models/%s/persistables/' % use_model
+model_path = 'models/%s/train/' % use_model
 infer_model_path = 'models/%s/infer/' % use_model
 # The init model file of directory.
-pretrained_model = 'models/crnn_ctc/persistables/'
+init_model = None
 # Whether use GPU to train.
 use_gpu = True
 # Min average window.
